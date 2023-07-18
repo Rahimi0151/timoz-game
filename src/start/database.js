@@ -1,9 +1,9 @@
+
 module.exports = ()=>{
     const mongoose = require('mongoose');
     const config = require('config');
 
     const MONGODB_URI = config.get('database-connection-string');
-    console.log('asdfasd')
     mongoose
     .connect(MONGODB_URI, {
         useNewUrlParser: true,
@@ -14,6 +14,8 @@ module.exports = ()=>{
     })
     .catch((error) => {
         console.log('Error connecting to MongoDB:', error);
+        // throw new Error('sdfjha;sldkfa;sldjf')
+
     });
 
 }

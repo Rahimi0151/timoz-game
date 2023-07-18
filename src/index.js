@@ -1,7 +1,9 @@
 const users = require('./routes/users')
 const express = require('express');
 const app = express();
-const port = process.env.PORT || 3000;
+let port = process.env.PORT
+
+if(process.env.NODE_ENV == 'test') port = Math.floor(Math.random()*60000)+5000;
 
 
 // Middleware
@@ -13,7 +15,7 @@ app.use(users)
 // Start
 require('./start/database')()
 
-app.get('/api/start/test', (req, res) => {
+app.get('/api/start/test', async (req, res) => {
   res.send('Hello, world!');
 });
 
