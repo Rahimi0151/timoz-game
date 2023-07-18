@@ -6,7 +6,7 @@ const port = 3000;
 app.use(express.json());
 
 // Routes
-app.get('/', (req, res) => {
+app.get('/api/start/test', (req, res) => {
   res.send('Hello, world!');
 });
 
@@ -14,3 +14,5 @@ app.get('/', (req, res) => {
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
+
+module.exports = app
