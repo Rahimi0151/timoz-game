@@ -107,4 +107,13 @@ describe('POST /api/users/signup', () => {
 
         expect(userInDB.email).toBe(payload.email)
     });
+
+    it('should return the saved user', async() => {
+        const response = await request(server).post('/api/users/signup').send(payload);
+
+        const userInDB = await User.findOne({email: payload.email})
+
+        expect(response.body).toHaveProperty('email')
+        expect(response.body.email).toBe(payload.email)
+    });
 });
