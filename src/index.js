@@ -10,7 +10,7 @@ if(process.env.NODE_ENV == 'test') port = Math.floor(Math.random()*60000)+5000;
 app.use(express.json());
 
 // Routes
-app.use(users)
+app.use('/api/users',users)
 
 // Start
 require('./start/database')()
