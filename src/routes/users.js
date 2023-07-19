@@ -9,18 +9,21 @@ router.post('/signup', validateUser.create, async(req, res) => {
     try {hashedPassword = await bcrypt.hash(req.body.password, 10);}
     catch (err) {res.status(500).json({message: 'someting went wrong'})}
 
-    const userInDB = await User.findOne({$or: [{username: req.body.username}, {email: req.body.username}]})
+    let userInDB = await User.findOne({$or: [{username: req.body.username}, {email: req.body.username}]})
     if (userInDB) {
         return res.status(400).json({message: 'username/email already taken'})}
 
-    // const user = new User({
-    //     phone: req.body.phone,
-    //     email: req.body.email,
-    //     password: hashedPassword,
-    //     username: req.body.username,
-    //     lastName: req.body.lastName,
-    //     firstName: req.body.firstName,
-    // })
+    const user = new User({
+        phone: req.body.phone,
+        email: req.body.email,
+        password: hashedPassword,
+        username: req.body.username,
+        lastName: req.body.lastName,
+        firstName: req.body.firstName,
+    })
+
+    userInDB = await user.save()
+
     // console.log(req.body)
     // console.log(req.body)
     // console.log(req.body)

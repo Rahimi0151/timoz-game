@@ -73,20 +73,38 @@ describe('POST /api/users/signup', () => {
     });
 
     it('returns 400 if email is taken', async() => {
-        await new User({email: payload.email, password: "password"}).save()
+        await new User({
+            email: payload.email,
+            password: "password"
+        }).save()
 
         const response = await request(server).post('/api/users/signup').send(payload);
 
         expect(response.status).toBe(400)
+        expect(response.body.message).toContain("email")
     });
 
     
-    // it('returns 400 if username is taken', async() => {
-    //     User.find = jest.fn().mockResolvedValue('some user in database with the same email')
-    //     // payload.username
+    it('returns 400 if username is taken', async() => {
+        await new User({
+            email: "test@example.com",
+            password: "password",
+            username: "username"
+        }).save()
+        
+        payload.username = "username"
 
-    //     const response = await request(server).post('/api/users/signup').send(payload);
+        const response = await request(server).post('/api/users/signup').send(payload);
 
-    //     expect(response.status).toBe(400)
-    // });
+        expect(response.status).toBe(400)
+        expect(response.body.message).toContain("username")
+    });
+
+    it('should save user to database', async() => {
+        const response = await request(server).post('/api/users/signup').send(payload);
+
+        const userInDB = await User.findOne({email: payload.email})
+
+        expect(userInDB.email).toBe(payload.email)
+    });
 });
