@@ -1,4 +1,5 @@
 const request = require('supertest');
+const bcrypt = require('bcrypt')
 
 let server
 let payload = {}
@@ -14,7 +15,7 @@ afterEach(async() => {
 });
 
 describe('POST /api/users/signup', () => {
-    
+
     describe('validations for password', () => {
         it('should return 400 if no password was avialable', async () => {
             payload.password = ''
@@ -60,5 +61,12 @@ describe('POST /api/users/signup', () => {
             expect(response.body.message).toContain('email');
         });
     });
-    
+
+    it('checks if the password has been hashed', async() => {
+        bcrypt.hash = jest.fn().mockResolvedValue("hashed-password")
+
+        await request(server).post('/api/users/signup').send(payload);
+
+        expect(bcrypt.hash).toHaveBeenCalledWith(payload.password, expect.anything());
+    });
 });
