@@ -1,5 +1,6 @@
 const request = require('supertest');
 const bcrypt = require('bcrypt')
+const User = require('../../src/models/user')
 
 let server
 let payload = {}
@@ -12,6 +13,7 @@ beforeEach(() => {
 
 afterEach(async() => {
     await server.close();
+    await User.deleteMany({})
 });
 
 describe('POST /api/users/signup', () => {
@@ -69,4 +71,22 @@ describe('POST /api/users/signup', () => {
 
         expect(bcrypt.hash).toHaveBeenCalledWith(payload.password, expect.anything());
     });
+
+    it('returns 400 if email is taken', async() => {
+        await new User({email: payload.email, password: "password"}).save()
+
+        const response = await request(server).post('/api/users/signup').send(payload);
+
+        expect(response.status).toBe(400)
+    });
+
+    
+    // it('returns 400 if username is taken', async() => {
+    //     User.find = jest.fn().mockResolvedValue('some user in database with the same email')
+    //     // payload.username
+
+    //     const response = await request(server).post('/api/users/signup').send(payload);
+
+    //     expect(response.status).toBe(400)
+    // });
 });
