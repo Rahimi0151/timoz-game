@@ -1,4 +1,7 @@
 const mongoose = require('mongoose');
+const config = require('config');
+const jwt = require('jsonwebtoken');
+const { number } = require('yup');
 
 const userSchema = new mongoose.Schema({
     username: {
@@ -40,8 +43,27 @@ const userSchema = new mongoose.Schema({
     createdAt: {
         type: Date,
         default: Date.now
+    },
+    points: {
+        type: Number,
+        default: 0
+    },
+    role: {
+        type: String,
+        default: 'user',
+        enum: ['user', 'moderator', 'admin', 'seyyed']
     }
 });
+
+userSchema.methods.generateJwt = function() {
+    const secretKey = config.get('jwt-secret-key')
+    const payload = {
+        email: this.email,
+        phone: this.phone,
+        username: this.username
+    }
+    return jwt.sign(payload, secretKey);
+}
 
 const User = mongoose.model('User', userSchema);
 
