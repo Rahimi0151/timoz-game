@@ -20,8 +20,6 @@ app.get('/api/start/test', async (req, res) => {
 });
 
 // Start the server
-const server = app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
-});
+const server = app.listen(port, () => {});
 
 module.exports = server

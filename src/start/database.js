@@ -14,8 +14,6 @@ module.exports = ()=>{
     })
     .catch((error) => {
         console.log('Error connecting to MongoDB:', error);
-        // throw new Error('sdfjha;sldkfa;sldjf')
-
     });
 
 }

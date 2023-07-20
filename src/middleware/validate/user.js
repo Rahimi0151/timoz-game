@@ -10,4 +10,7 @@ const create = (req, res, next)=>{
         .then(() => {next();})
         .catch((error)=>{res.status(400).json({message: error.message})})
 }
-module.exports = {create}
+module.exports = {
+    create: create,
+    login: create
+}

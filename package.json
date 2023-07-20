@@ -4,7 +4,7 @@
   "description": "this is a technical demo for a online real-time game",
   "main": "./src/index.js",
   "scripts": {
-    "test": "jest --watchAll "
+    "test": "jest --watchAll --runInBand"
   },
   "author": "",
   "license": "ISC",
@@ -12,6 +12,7 @@
     "bcrypt": "^5.1.0",
     "config": "^3.3.9",
     "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.1",
     "mongoose": "^7.3.4",
     "nodemon": "^3.0.1",
     "underscore": "^1.13.6",
