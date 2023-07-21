@@ -4,7 +4,7 @@
   "description": "this is a technical demo for a online real-time game",
   "main": "./src/index.js",
   "scripts": {
-    "test": "jest --watchAll --runInBand"
+    "test": "jest --watchAll"
   },
   "author": "",
   "license": "ISC",
