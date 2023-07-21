@@ -1,4 +1,5 @@
 const users = require('./routes/users')
+const quizes = require('./routes/quizes')
 const express = require('express');
 const app = express();
 let port = process.env.PORT
@@ -10,6 +11,7 @@ if(process.env.NODE_ENV == 'test') port = Math.floor(Math.random()*60000)+5000;
 app.use(express.json());
 
 // Routes
+app.use('/api/quiz',quizes)
 app.use('/api/users',users)
 
 // Start

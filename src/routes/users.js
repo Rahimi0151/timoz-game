@@ -4,7 +4,7 @@ const validateUser = require('../middleware/validate/user')
 const bcrypt = require('bcrypt')
 const User = require('../models/user')
 const _ = require('underscore')
-let c = 0
+
 router.post('/signup', validateUser.create, async(req, res) => {
     let hashedPassword
     try {hashedPassword = await bcrypt.hash(req.body.password, 10);}
