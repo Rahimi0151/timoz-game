@@ -12,9 +12,8 @@ const create = (req, res, next)=>{
     });
 
     const quizSchema = yup.object({
-        quizNumber: yup.number().required('quizNumber required'),
         title: yup.string().required('title required'),
-        questions: yup.array().of(questionSchema),
+        questions: yup.array().of(questionSchema).min(1),
     });
     
     quizSchema.validate(req.body)

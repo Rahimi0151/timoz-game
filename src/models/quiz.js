@@ -47,7 +47,7 @@ const questionSchema = new mongoose.Schema({
 
 const quizSchema = new mongoose.Schema({
     quizNumber: {
-        type: String,
+        type: Number,
         required: true,
         minLength: 1,
         maxLength: 255,

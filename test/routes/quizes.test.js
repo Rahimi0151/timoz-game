@@ -1,15 +1,29 @@
 const request = require('supertest');
-const bcrypt = require('bcrypt')
-const User = require('../../src/models/user')
+const Quiz = require('../../src/models/quiz')
 
 let server
 let payload = {}
 
 beforeEach(async() => {
     server = require('../../src/index');
-    payload.email = 'validEmail@gmail.com'
-    payload.password = 'validPassword'
-    await User.deleteMany({})
+    payload = {
+        quizNumber: 1,
+        title: 'first quiz',
+        questions: [
+            {
+                questionTitle: "question 1", correctAnswer: 1,
+                answer1: "answer1", answer2: "answer2", answer3: "answer3", answer4: "answer4",
+            },{
+                questionTitle: "question 2", correctAnswer: 1,
+                answer1: "answer1", answer2: "answer2", answer3: "answer3", answer4: "answer4",
+            },{
+                questionTitle: "question 3", correctAnswer: 1,
+                answer1: "answer1", answer2: "answer2", answer3: "answer3", answer4: "answer4",
+            }
+        ]
+    }
+
+    await Quiz.deleteMany({})
 });
 
 afterEach(async() => {
@@ -17,25 +31,74 @@ afterEach(async() => {
     // await User.deleteMany({})
 });
 
-describe('POST /api/users/signup', () => {
+describe('POST /api/quiz/', () => {
 
-    describe('validations for password', () => {
-        it('should return 400 if no password was avialable', async () => {
-            payload.password = ''
+    describe('validations for quiz', () => {
+        it('should return 400 if no title was avialable', async () => {
+            payload.title = ''
 
-            const response = await request(server).post('/api/users/signup').send(payload);
+            const response = await request(server).post('/api/quiz').send(payload);
 
             expect(response.status).toBe(400);
-            expect(response.body.message).toContain('password');
+            expect(response.body.message).toContain('title');
         });
+        
+    });
+    describe('validations for each question', () => {
+        it('should return 400 if no question was avialable', async () => {
+            payload.questions = []
 
-        it('should return 400 if password was less than 8 characters long', async () => {
-            payload.password = '1234567'
+            const response = await request(server).post('/api/quiz').send(payload);
 
-            const response = await request(server).post('/api/users/signup').send(payload);
             expect(response.status).toBe(400);
-            expect(response.body.message).toContain('password');
+            expect(response.body.message).toContain('at least 1');
         });
+
+        it('should return 400 if a question did not have a valid title', async () => {
+            payload.questions[0].questionTitle = ''
+
+            const response = await request(server).post('/api/quiz').send(payload);
+
+            expect(response.status).toBe(400);
+            expect(response.body.message).toContain('questionTitle');
+        });
+
+        it('should return 400 if a question did not have a valid answer1', async () => {
+            payload.questions[0].answer1 = ''
+
+            const response = await request(server).post('/api/quiz').send(payload);
+
+            expect(response.status).toBe(400);
+            expect(response.body.message).toContain('answer1');
+        });
+
+        it('should return 400 if a question did not have a correctAnswer', async () => {
+            payload.questions[0].correctAnswer = ''
+
+            const response = await request(server).post('/api/quiz').send(payload);
+
+            expect(response.status).toBe(400);
+            expect(response.body.message).toContain('correctAnswer');
+        });
+
+        it('should return 400 if a question\'s correctAnswer is not between 1 and 4', async () => {
+            payload.questions[0].correctAnswer = 5
+
+            const response = await request(server).post('/api/quiz').send(payload);
+
+            expect(response.status).toBe(400);
+            expect(response.body.message).toContain('correctAnswer');
+        });
+
+        it('should return 400 if a question\'s difficulty is not valid', async () => {
+            payload.questions[0].difficulty = 'some invalid difficulty'
+
+            const response = await request(server).post('/api/quiz').send(payload);
+
+            expect(response.status).toBe(400);
+            expect(response.body.message).toContain('one of the following values');
+        });
+        
     });
 
 //     describe('validations for email', () => {
