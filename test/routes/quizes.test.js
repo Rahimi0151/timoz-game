@@ -7,7 +7,6 @@ let payload = {}
 beforeEach(async() => {
     server = require('../../src/index');
     payload = {
-        quizNumber: 1,
         title: 'first quiz',
         questions: [
             {
@@ -100,6 +99,43 @@ describe('POST /api/quiz/', () => {
         });
         
     });
+    
+    it('should calculate the right quizNumber', async () => {
+        //creating a quiz with quizNumber = 1 to check if the next quiz we save have quizNumber = 2
+        const fakePayload = { ...payload }
+        fakePayload.quizNumber = 1
+        fakePayload.title = 'fake title'
+        await new Quiz(fakePayload).save()
+
+        await request(server).post('/api/quiz').send(payload);
+
+        const quizInDB = await Quiz.findOne({title: payload.title})
+        expect(quizInDB.quizNumber).toBe(2)
+    });
+    
+    it('should save the correct quiz to the database', async () => {
+        const response = await request(server).post('/api/quiz').send(payload);
+
+        const count = await Quiz.count()
+        expect(count).toBe(1)
+    });
+
+    it('should return 200 if quiz was saved successfully', async () => {
+        const response = await request(server).post('/api/quiz').send(payload);
+
+        expect(response.status).toBe(200)
+    });
+
+    it('should return the saved quiz to the user', async () => {
+        const response = await request(server).post('/api/quiz').send(payload);
+
+        expect(response.body.quizNumber).toBe(1)
+        expect(response.body.title).toBe(payload.title)
+        expect(response.body.questions).toHaveLength(payload.questions.length)
+    });
+
+    
+        
 
 //     describe('validations for email', () => {
        
