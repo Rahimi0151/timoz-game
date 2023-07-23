@@ -1,6 +1,7 @@
 const request = require('supertest');
 const Quiz = require('../../src/models/quiz')
 const User = require('../../src/models/user')
+const mongoose = require('mongoose')
 
 let server
 let payload = {}
@@ -49,11 +50,28 @@ describe('GET /api/game/', () => {
         });        
         
         it('should return 200 if there is an active quiz', async () => {
+            await createQuiz(active=true)
             const response = await request(server).get('/api/game').set('x-auth-token', jwt);
             
+            expect(response.status).toBe(200);
+            expect(mongoose.Types.ObjectId.isValid(response.body.quizId)).toBe(true);
+        });        
+    });
+
+    describe('check the socket connection', () => {
+        it('should check if connected to socket', async () => {
+            const response = await request(server).get('/api/game').set('x-auth-token', jwt);
+
             expect(response.status).toBe(400);
             expect(response.body.message).toContain('active');
         });        
+        
+        // it('should return 200 if there is an active quiz', async () => {
+        //     const response = await request(server).get('/api/game').set('x-auth-token', jwt);
+            
+        //     expect(response.status).toBe(400);
+        //     expect(response.body.message).toContain('active');
+        // });        
     });
 });
 
