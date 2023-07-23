@@ -66,6 +66,10 @@ const quizSchema = new mongoose.Schema({
         type: Date,
         default: Date.now,
     },
+    active: {
+        type: Boolean,
+        default: false
+    }
     //TODO:     add active: a field that is a boolean. its false for all the quizes in this collection
     //TODO:     but the quiz that is active at the time and will be played that night.
 });

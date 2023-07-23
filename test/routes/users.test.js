@@ -6,7 +6,7 @@ let server
 let payload = {}
 
 beforeEach(async() => {
-    server = require('../../src/index');
+    server = require('../../src/index').server;
     payload.email = 'validEmail@gmail.com'
     payload.password = 'validPassword'
     await User.deleteMany({})

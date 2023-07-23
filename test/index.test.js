@@ -2,7 +2,7 @@ const request = require('supertest');
 let server 
 
 beforeEach(() => {
-    server = require('../src/index');
+    server = require('../src/index').server;
 });
 
 afterEach(async() => {
