@@ -2,13 +2,22 @@ const request = require('supertest');
 const Quiz = require('../../src/models/quiz')
 const User = require('../../src/models/user')
 const mongoose = require('mongoose')
+const io = require('socket.io-client');
 
 let server
 let payload = {}
 let jwt
+let clientSocket
 
-beforeEach(async() => {
+beforeAll(async() => {
     server = require('../../src/index').server;
+    clientSocket = io.connect(`http://localhost:${server.address().port}`);
+})
+afterAll(async() => {
+    clientSocket.disconnect();
+    await server.close();
+})
+beforeEach(async() => {
     //sign up as a new user
     await signup();
     //login as the same user
@@ -18,7 +27,6 @@ beforeEach(async() => {
 });
 
 afterEach(async() => {
-    await server.close();
 });
 
 describe('GET /api/game/', () => {
@@ -58,20 +66,34 @@ describe('GET /api/game/', () => {
         });        
     });
 
-    describe('check the socket connection', () => {
-        it('should check if connected to socket', async () => {
-            const response = await request(server).get('/api/game').set('x-auth-token', jwt);
+    describe('check the socket connection', () => { 
+        it('should check if connected to socket', async () => {          
+            const joinPromise = new Promise((resolve) => {
+                clientSocket.on('join', (data) => {
+                    console.log('User joined room:', data);
+                    resolve();
+                });
+            });
+          
+            clientSocket.emit('join', { room: 1 });
+            
+            await joinPromise;
+          });
 
-            expect(response.status).toBe(400);
-            expect(response.body.message).toContain('active');
-        });        
-        
+
+
+
+
+
+
+
         // it('should return 200 if there is an active quiz', async () => {
         //     const response = await request(server).get('/api/game').set('x-auth-token', jwt);
             
         //     expect(response.status).toBe(400);
         //     expect(response.body.message).toContain('active');
-        // });        
+        // });       
+
     });
 });
 

@@ -15,18 +15,19 @@ router.get('/', validateUser.isLogin, async(req, res) => {
 const io = (io) => {
     // Socket.io connection
     io.on('connection', (socket) => {
-        console.log('A user connected');
+        // console.log('A user connected');
     
         // Socket.io event listener
         socket.on('join', (data) => {
             console.log('User joined room:', data.room);
+            socket.emit('join', data)
         });
     
-        // Disconnect event listener
-        socket.on('disconnect', () => {
-            console.log('A user disconnected');
-        });
+        // // Disconnect event listener
+        // socket.on('disconnect', () => {
+        //     console.log('A user disconnected');
+        // });
     });
-  };
+};
   
 module.exports = { router, io };
