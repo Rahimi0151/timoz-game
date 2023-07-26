@@ -67,33 +67,22 @@ describe('GET /api/game/', () => {
     });
 
     describe('check the socket connection', () => { 
-        it('should check if connected to socket', async () => {          
+        it('should check if connected to socket', async () => {    
+            await createQuiz(active=true)
+            const response = await request(server).get('/api/game').set('x-auth-token', jwt);
+
             const joinPromise = new Promise((resolve) => {
                 clientSocket.on('join', (data) => {
-                    console.log('User joined room:', data);
+                    console.log(data);
+                    expect(data).toContain(response.body.quizId)
                     resolve();
                 });
             });
-          
-            clientSocket.emit('join', { room: 1 });
+
+            clientSocket.emit('join', { quizId: response.body.quizId });
             
             await joinPromise;
           });
-
-
-
-
-
-
-
-
-        // it('should return 200 if there is an active quiz', async () => {
-        //     const response = await request(server).get('/api/game').set('x-auth-token', jwt);
-            
-        //     expect(response.status).toBe(400);
-        //     expect(response.body.message).toContain('active');
-        // });       
-
     });
 });
 

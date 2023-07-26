@@ -13,20 +13,13 @@ router.get('/', validateUser.isLogin, async(req, res) => {
 //TODO:: add all the required socket connections
 
 const io = (io) => {
-    // Socket.io connection
-    io.on('connection', (socket) => {
-        // console.log('A user connected');
-    
-        // Socket.io event listener
-        socket.on('join', (data) => {
-            console.log('User joined room:', data.room);
-            socket.emit('join', data)
+    io.on('connection', (socket) => {    
+        let questions = {}
+        socket.on('join', async(data) => {
+            questions = await Quiz.findById(data.quizId)
+            socket.join(data.quizId)
+            io.in(data.quizId).emit('join', `please wait for game to start in room: ${data.quizId}`)
         });
-    
-        // // Disconnect event listener
-        // socket.on('disconnect', () => {
-        //     console.log('A user disconnected');
-        // });
     });
 };
   
