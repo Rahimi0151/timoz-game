@@ -81,7 +81,7 @@ describe('GET /api/game/', () => {
                 });
             });
 
-            clientSocket.emit('join', { quizTitle: quizTitle });
+            clientSocket.emit('join', { quizTitle, jwt });
             
             await joinPromise;
         });
@@ -89,7 +89,7 @@ describe('GET /api/game/', () => {
         it('shouldnt let anyone but seyyed to send a next quesion request', async () => {    
             const quizTitle = (await createQuiz(active=true)).body.title
             
-            clientSocket.emit('join', { quizTitle: quizTitle });
+            clientSocket.emit('join', { quizTitle, jwt });
             await new Promise((resolve) => {
                 clientSocket.on('join', (data) => {
                     expect(data).toContain(quizTitle)
@@ -114,7 +114,7 @@ describe('GET /api/game/', () => {
             await signupAsAdmin()
             await login()
 
-            clientSocket.emit('join', { quizTitle: quizTitle });
+            clientSocket.emit('join', { quizTitle, jwt });
             await new Promise((resolve) => {
                 clientSocket.on('join', () => {resolve()});
             });
@@ -134,7 +134,7 @@ describe('GET /api/game/', () => {
             await signupAsAdmin()
             await login()
 
-            clientSocket.emit('join', { quizTitle: quizTitle });
+            clientSocket.emit('join', { quizTitle, jwt });
             await new Promise((resolve) => {
                 clientSocket.on('join', () => {resolve()});
             });

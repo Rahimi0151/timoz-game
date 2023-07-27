@@ -17,9 +17,12 @@ router.get('/', validateUser.isLogin, async(req, res) => {
 
 const io = (io) => {
     io.on('connection', (socket) => {
-        let quiz     
         socket.on('join', async(data) => {
-            quiz = await Quiz.findOne({title: data.quizTitle})
+            jwt.verify(data.jwt, config.get('jwt-secret-key'), (error, decodedToken) => {
+                socket.user = decodedToken
+            })
+            console.log(socket.user);
+            socket.quiz = await Quiz.findOne({title: data.quizTitle})
             socket.join(data.quizTitle)
             io.in(data.quizTitle).emit('join', `please wait for game to start in room: ${data.quizTitle}`)
         });
@@ -29,10 +32,10 @@ const io = (io) => {
                 if (err) {socket.emit('next-question', "error")}
                 if (decodedToken.role != "seyyed") {return socket.emit('next-question', "you are not seyyed")}
                 
-                const thisQuestion = _.pick(quiz.questions.shift(), [
+                const thisQuestion = _.pick(socket.quiz.questions.shift(), [
                     'questionTitle', 'difficulty', 'answer1', 'answer2', 'answer3', 'answer4'
                 ])
-                io.in(quiz.title).emit('next-question', thisQuestion)
+                io.in(socket.quiz.title).emit('next-question', thisQuestion)
                 return
             });
         });
