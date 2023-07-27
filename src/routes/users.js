@@ -14,6 +14,7 @@ router.post('/signup', validateUser.create, async(req, res) => {
     if (userInDB) {return res.status(400).json({message: 'username/email already taken'})}
 
     const user = await new User({
+        role: 'user',
         phone: req.body.phone,
         email: req.body.email,
         password: hashedPassword,
@@ -21,7 +22,7 @@ router.post('/signup', validateUser.create, async(req, res) => {
         lastName: req.body.lastName,
         firstName: req.body.firstName,
     }).save()
-    res.status(201).json(_.pick(user, 'email', 'phone', 'username', 'lastName', 'firstName', ));
+    res.status(201).json(_.pick(user, '_id', 'email', 'phone', 'username', 'lastName', 'firstName', 'role'));
 });
 
 router.post('/login', validateUser.login, async(req, res) => {

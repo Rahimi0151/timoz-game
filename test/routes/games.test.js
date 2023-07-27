@@ -11,22 +11,25 @@ let clientSocket
 
 beforeAll(async() => {
     server = require('../../src/index').server;
-    clientSocket = io.connect(`http://localhost:${server.address().port}`);
 })
 afterAll(async() => {
-    clientSocket.disconnect();
     await server.close();
 })
 beforeEach(async() => {
+    clientSocket = io.connect(`http://localhost:${server.address().port}`);
     //sign up as a new user
     await signup();
     //login as the same user
     await login()
-
+    
     await Quiz.deleteMany({})
+    await User.deleteMany({})
 });
 
 afterEach(async() => {
+    await clientSocket.disconnect();
+    await Quiz.deleteMany({})
+    await User.deleteMany({})
 });
 
 describe('GET /api/game/', () => {
@@ -62,27 +65,92 @@ describe('GET /api/game/', () => {
             const response = await request(server).get('/api/game').set('x-auth-token', jwt);
             
             expect(response.status).toBe(200);
-            expect(mongoose.Types.ObjectId.isValid(response.body.quizId)).toBe(true);
+            expect(response.body.quizTitle).toContain("quizTitle");
         });        
     });
 
     describe('check the socket connection', () => { 
-        it('should check if connected to socket', async () => {    
-            await createQuiz(active=true)
+        it('should join the user in the selected game', async () => {    
+            const quizTitle = (await createQuiz(active=true)).body.title
             const response = await request(server).get('/api/game').set('x-auth-token', jwt);
 
             const joinPromise = new Promise((resolve) => {
                 clientSocket.on('join', (data) => {
-                    console.log(data);
-                    expect(data).toContain(response.body.quizId)
+                    expect(data).toContain(quizTitle)
                     resolve();
                 });
             });
 
-            clientSocket.emit('join', { quizId: response.body.quizId });
+            clientSocket.emit('join', { quizTitle: quizTitle });
             
             await joinPromise;
-          });
+        });
+
+        it('shouldnt let anyone but seyyed to send a next quesion request', async () => {    
+            const quizTitle = (await createQuiz(active=true)).body.title
+            
+            clientSocket.emit('join', { quizTitle: quizTitle });
+            await new Promise((resolve) => {
+                clientSocket.on('join', (data) => {
+                    expect(data).toContain(quizTitle)
+                    expect(data).toContain("please wait")
+                    resolve();
+                });
+            });
+
+            clientSocket.emit('next-question', {token: jwt});
+            await new Promise((resolve) => {
+                clientSocket.on('next-question', (data) => {
+                    expect(data).toContain('not')
+                    expect(data).toContain('seyyed')
+                    resolve();
+                });
+            });
+
+        });
+
+        it('should send the first question when seyyed sends his jwt to the socket', async () => {    
+            const quizTitle = (await createQuiz(active=true)).body.title
+            await signupAsAdmin()
+            await login()
+
+            clientSocket.emit('join', { quizTitle: quizTitle });
+            await new Promise((resolve) => {
+                clientSocket.on('join', () => {resolve()});
+            });
+
+            clientSocket.emit('next-question', {token: jwt});
+            await new Promise((resolve) => {
+                clientSocket.on('next-question', (data) => {
+                    expect(data).toHaveProperty("questionTitle")
+                    expect(data.questionTitle).toContain('question 1')
+                    resolve();
+                });
+            });
+        });
+
+        it('should not send the correct answer to the users!', async () => {    
+            const quizTitle = (await createQuiz(active=true)).body.title
+            await signupAsAdmin()
+            await login()
+
+            clientSocket.emit('join', { quizTitle: quizTitle });
+            await new Promise((resolve) => {
+                clientSocket.on('join', () => {resolve()});
+            });
+
+            clientSocket.emit('next-question', {token: jwt});
+            await new Promise((resolve) => {
+                clientSocket.on('next-question', (data) => {
+                    expect(data).not.toHaveProperty("correctAnswer")
+                    expect(data).toHaveProperty("questionTitle")
+                    expect(data.questionTitle).toContain('question 1')
+                    resolve();
+                });
+            });
+        });
+
+
     });
 });
 
@@ -91,13 +159,20 @@ async function login() {
         .post('/api/users/login')
         .send({ email: "validEmail@gmail.com", password: 'valid password' });
     jwt = user.headers['x-auth-token']
-
 }
 
 async function signup() {
     await request(server)
         .post('/api/users/signup')
         .send({ email: "validEmail@gmail.com", password: 'valid password' });
+}
+
+async function signupAsAdmin() {
+    await User.deleteMany({})
+    const user = await request(server)
+        .post('/api/users/signup')
+        .send({ email: "validEmail@gmail.com", password: 'valid password' });
+    await User.findOneAndUpdate({ _id: user.body._id }, { role: 'seyyed' })
 }
 
 async function createQuiz(active) {
@@ -117,5 +192,5 @@ async function createQuiz(active) {
         ],
         active: active
     }
-    await request(server).post('/api/quiz').send(payload);
+    return await request(server).post('/api/quiz').send(payload);
 }

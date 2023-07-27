@@ -4,7 +4,10 @@
   "description": "this is a technical demo for a online real-time game",
   "main": "./src/index.js",
   "scripts": {
-    "test": "jest ./test/routes/games.test.js  --watchAll --maxWorkers=1 "
+    "test": "jest ./test/routes/games.test.js  --watchAll --maxWorkers=1"
+  },
+  "jest": {
+    "testTimeout": 1000
   },
   "author": "",
   "license": "ISC",

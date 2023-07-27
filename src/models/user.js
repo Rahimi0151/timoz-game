@@ -57,6 +57,7 @@ const userSchema = new mongoose.Schema({
 userSchema.methods.generateJwt = function() {
     const secretKey = config.get('jwt-secret-key')
     const payload = {
+        role: this.role,
         email: this.email,
         phone: this.phone,
         username: this.username
