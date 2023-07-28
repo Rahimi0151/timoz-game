@@ -8,6 +8,7 @@ let server
 let payload = {}
 let jwt
 let clientSocket
+let socketConnections = []
 
 beforeAll(async() => {
     server = require('../../src/index').server;
@@ -17,6 +18,7 @@ afterAll(async() => {
 })
 beforeEach(async() => {
     clientSocket = io.connect(`http://localhost:${server.address().port}`);
+    socketConnections.push(clientSocket)
     //sign up as a new user
     await signup();
     //login as the same user
@@ -27,7 +29,7 @@ beforeEach(async() => {
 });
 
 afterEach(async() => {
-    await clientSocket.disconnect();
+    for (const socket of socketConnections) socket.disconnect()    
     await Quiz.deleteMany({})
     await User.deleteMany({})
 });
@@ -111,8 +113,7 @@ describe('GET /api/game/', () => {
 
         it('should send the first question when seyyed sends his jwt to the socket', async () => {    
             const quizTitle = (await createQuiz(active=true)).body.title
-            await signupAsAdmin()
-            await login()
+            await signupAndLoginAsAdmin()
 
             clientSocket.emit('join', { quizTitle, jwt });
             await new Promise((resolve) => {
@@ -131,8 +132,7 @@ describe('GET /api/game/', () => {
 
         it('should not send the correct answer to the users!', async () => {    
             const quizTitle = (await createQuiz(active=true)).body.title
-            await signupAsAdmin()
-            await login()
+            await signupAndLoginAsAdmin()
 
             clientSocket.emit('join', { quizTitle, jwt });
             await new Promise((resolve) => {
@@ -150,7 +150,54 @@ describe('GET /api/game/', () => {
             });
         });
 
+        describe('checking the submited answers', () => { 
+            it('should recieve the answer from the user ', async () => {  
+                const adminSocket = createAdminSocket()
+                const quizTitle = (await createQuiz(active=true)).body.title
+                const userJwt = await signupAndLoginAsUser()
+                const adminJwt = await signupAndLoginAsAdmin()
 
+                //user joins a game
+                clientSocket.emit('join', { quizTitle, jwt: userJwt });
+                await new Promise((resolve) => {
+                    clientSocket.on('join', () => {resolve()});
+                });
+    
+                //admin joins a game
+                adminSocket.emit('join', { quizTitle, jwt: adminJwt });
+                await new Promise((resolve) => {
+                    clientSocket.on('join', () => {resolve()});
+                });
+    
+                //admin sends the next question
+                const adminPromise =  new Promise((resolve) => {
+                    adminSocket.on('next-question', (data) => {
+                        resolve()
+                    });
+                });
+
+                //user recives the next question
+                const userPromise = new Promise((resolve) => {
+                    clientSocket.on('next-question', (data) => {
+                        expect(data).not.toHaveProperty("correctAnswer")
+                        expect(data).toHaveProperty("questionTitle")
+                        expect(data.questionTitle).toContain('question 1')
+                        resolve()
+                    });
+                });
+
+                adminSocket.emit('next-question', {token: adminJwt});
+                await adminPromise
+            });
+
+
+
+
+
+
+
+
+        })
     });
 });
 
@@ -159,6 +206,7 @@ async function login() {
         .post('/api/users/login')
         .send({ email: "validEmail@gmail.com", password: 'valid password' });
     jwt = user.headers['x-auth-token']
+    return jwt
 }
 
 async function signup() {
@@ -173,6 +221,16 @@ async function signupAsAdmin() {
         .post('/api/users/signup')
         .send({ email: "validEmail@gmail.com", password: 'valid password' });
     await User.findOneAndUpdate({ _id: user.body._id }, { role: 'seyyed' })
+}
+
+async function signupAndLoginAsAdmin() {
+    await signupAsAdmin()
+    return await login()
+}
+
+async function signupAndLoginAsUser() {
+    await signup()
+    return await login()
 }
 
 async function createQuiz(active) {
@@ -193,4 +251,10 @@ async function createQuiz(active) {
         active: active
     }
     return await request(server).post('/api/quiz').send(payload);
+}
+
+function createAdminSocket() {
+    adminSocket = io.connect(`http://localhost:${server.address().port}`);
+    socketConnections.push(adminSocket)
+    return adminSocket  
 }

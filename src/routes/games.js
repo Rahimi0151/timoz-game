@@ -17,11 +17,12 @@ router.get('/', validateUser.isLogin, async(req, res) => {
 
 const io = (io) => {
     io.on('connection', (socket) => {
+        socket.users = []
         socket.on('join', async(data) => {
             jwt.verify(data.jwt, config.get('jwt-secret-key'), (error, decodedToken) => {
                 socket.user = decodedToken
+                socket.users.push(decodedToken)
             })
-            console.log(socket.user);
             socket.quiz = await Quiz.findOne({title: data.quizTitle})
             socket.join(data.quizTitle)
             io.in(data.quizTitle).emit('join', `please wait for game to start in room: ${data.quizTitle}`)
