@@ -7,7 +7,7 @@
     "test": "jest ./test/routes/games.test.js  --watchAll --maxWorkers=1"
   },
   "jest": {
-    "testTimeout": 1000
+    "testTimeout": 5000
   },
   "author": "",
   "license": "ISC",

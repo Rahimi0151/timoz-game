@@ -5,6 +5,8 @@ const Quiz = require('../models/quiz')
 const config = require('config')
 const jwt = require('jsonwebtoken')
 const _ = require('underscore')
+const util = require('util');
+
 
 router.get('/', validateUser.isLogin, async(req, res) => {
     const activeQuiz = await Quiz.findOne({active: true})
@@ -29,6 +31,8 @@ const io = (io) => {
         });
 
         socket.on('next-question', async(data) => {
+            // const delay = util.promisify(setTimeout);
+
             jwt.verify(data.token, config.get('jwt-secret-key'), (err, decodedToken) => {
                 if (err) {socket.emit('next-question', "error")}
                 if (decodedToken.role != "seyyed") {return socket.emit('next-question', "you are not seyyed")}
@@ -37,6 +41,10 @@ const io = (io) => {
                     'questionTitle', 'difficulty', 'answer1', 'answer2', 'answer3', 'answer4'
                 ])
                 io.in(socket.quiz.title).emit('next-question', thisQuestion)
+                
+                setTimeout(()=>{
+                    io.in(socket.quiz.title).emit('time-up', 'times up!')
+                },config.get('time-to-answer'))
                 return
             });
         });

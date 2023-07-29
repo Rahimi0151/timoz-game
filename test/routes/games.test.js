@@ -150,54 +150,91 @@ describe('GET /api/game/', () => {
             });
         });
 
-        describe('checking the submited answers', () => { 
-            it('should recieve the answer from the user ', async () => {  
-                const adminSocket = createAdminSocket()
-                const quizTitle = (await createQuiz(active=true)).body.title
-                const userJwt = await signupAndLoginAsUser()
-                const adminJwt = await signupAndLoginAsAdmin()
+        it('should send the question to the user when admin says so', async () => {  
+            const adminSocket = createAdminSocket()
+            const quizTitle = (await createQuiz(active=true)).body.title
+            const userJwt = await signupAndLoginAsUser()
+            const adminJwt = await signupAndLoginAsAdmin()
 
-                //user joins a game
-                clientSocket.emit('join', { quizTitle, jwt: userJwt });
-                await new Promise((resolve) => {
-                    clientSocket.on('join', () => {resolve()});
-                });
-    
-                //admin joins a game
-                adminSocket.emit('join', { quizTitle, jwt: adminJwt });
-                await new Promise((resolve) => {
-                    clientSocket.on('join', () => {resolve()});
-                });
-    
-                //admin sends the next question
-                const adminPromise =  new Promise((resolve) => {
-                    adminSocket.on('next-question', (data) => {
-                        resolve()
-                    });
-                });
-
-                //user recives the next question
-                const userPromise = new Promise((resolve) => {
-                    clientSocket.on('next-question', (data) => {
-                        expect(data).not.toHaveProperty("correctAnswer")
-                        expect(data).toHaveProperty("questionTitle")
-                        expect(data.questionTitle).toContain('question 1')
-                        resolve()
-                    });
-                });
-
-                adminSocket.emit('next-question', {token: adminJwt});
-                await adminPromise
+            //user joins a game
+            clientSocket.emit('join', { quizTitle, jwt: userJwt });
+            await new Promise((resolve) => {
+                clientSocket.on('join', () => {resolve()});
             });
 
+            //admin joins a game
+            adminSocket.emit('join', { quizTitle, jwt: adminJwt });
+            await new Promise((resolve) => {
+                clientSocket.on('join', () => {resolve()});
+            });
 
+            //admin sends the next question
+            const adminPromise =  new Promise((resolve) => {
+                adminSocket.on('next-question', (data) => {
+                    resolve()
+                });
+            });
 
+            //user recives the next question
+            const userPromise = new Promise((resolve) => {
+                clientSocket.on('next-question', (data) => {
+                    expect(data).not.toHaveProperty("correctAnswer")
+                    expect(data).toHaveProperty("questionTitle")
+                    expect(data.questionTitle).toContain('question 1')
+                    resolve()
+                });
+            });
 
+            adminSocket.emit('next-question', {token: adminJwt});
+            await adminPromise
+        });
 
+        it('should shoud no let users answer after timer is up', async () => {  
+            const adminSocket = createAdminSocket()
+            const quizTitle = (await createQuiz(active=true)).body.title
+            const userJwt = await signupAndLoginAsUser()
+            const adminJwt = await signupAndLoginAsAdmin()
 
+            //user joins a game
+            clientSocket.emit('join', { quizTitle, jwt: userJwt });
+            await new Promise((resolve) => {
+                clientSocket.on('join', () => {resolve()});
+            });
 
+            //admin joins a game
+            adminSocket.emit('join', { quizTitle, jwt: adminJwt });
+            await new Promise((resolve) => {
+                clientSocket.on('join', () => {resolve()});
+            });
 
-        })
+            //admin sends the next question
+            const adminPromise =  new Promise((resolve) => {
+                adminSocket.on('next-question', (data) => {
+                    resolve()
+                });
+            });
+
+            //user recives the next question
+            const userPromise = new Promise((resolve) => {
+                clientSocket.on('next-question', (data) => {
+                    resolve()
+                });
+            });
+
+            //user can not see the question after the timer is up
+            const timeoutPromise = new Promise((resolve) => {
+                clientSocket.on('time-up', (data) => {
+                    expect(data).toContain('time')
+                    resolve()
+                });
+            });
+
+            adminSocket.emit('next-question', {token: adminJwt});
+            await adminPromise
+            await userPromise
+            await timeoutPromise
+        });
+
     });
 });
 

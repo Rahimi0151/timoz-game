@@ -1,4 +1,5 @@
 {
     "database-connection-string": "mongodb://127.0.0.1:27017/vidly",
-    "jwt-secret-key": "default-key"
+    "jwt-secret-key": "default-key",
+    "time-to-answer": 15000
 }
