@@ -284,6 +284,57 @@ describe('GET /api/game/', () => {
             await adminPromise
             await userPromise
             await userAnswersPromise
+        });
+        
+        it('sends them to the next waitlist if their answer is correct', async () => {  
+            const adminSocket = createAdminSocket()
+            const quizTitle = (await createQuiz(active=true)).body.title
+            const userJwt = await signupAndLoginAsUser()
+            const adminJwt = await signupAndLoginAsAdmin()
+
+            //user joins a game
+            clientSocket.emit('join', { quizTitle, jwt: userJwt });
+            await new Promise((resolve) => {
+                clientSocket.on('join', () => {resolve()});
+            });
+
+            //admin joins a game
+            adminSocket.emit('join', { quizTitle, jwt: adminJwt });
+            await new Promise((resolve) => {
+                clientSocket.on('join', () => {resolve()});
+            });
+
+            //admin sends the next question
+            const adminPromise =  new Promise((resolve) => {
+                adminSocket.on('next-question', (data) => {
+                    resolve()
+                });
+            });
+
+            //user recives the next question
+            const userPromise = new Promise((resolve) => {
+                clientSocket.on('next-question', (data) => {
+                    clientSocket.emit('answer', {
+                        question: data,
+                        answer: 1, //the correct answer is 1. 
+                        token: userJwt
+                    }) // the correct answer was 1 btw
+                    resolve()
+                });
+            });
+
+            //user recives the next question
+            const userAnswersPromise = new Promise((resolve) => {
+                clientSocket.on('join', (data) => {
+                    expect(data).toContain('wait')
+                    resolve()
+                });
+            });
+
+            adminSocket.emit('next-question', {token: adminJwt});
+            await adminPromise
+            await userPromise
+            await userAnswersPromise
         }, 2000);
     });
 });

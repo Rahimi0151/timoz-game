@@ -28,19 +28,18 @@ const io = (io) => {
                 socket.users.push(decodedToken)
             })
             socket.quiz = await Quiz.findOne({title: data.quizTitle})
+            await redis.set('quizTitle', JSON.stringify(data.quizTitle))
             socket.join(data.quizTitle)
             io.in(data.quizTitle).emit('join', `please wait for game to start in room: ${data.quizTitle}`)
         });
 
         socket.on('next-question', async(data) => {
-            // const delay = util.promisify(setTimeout);
             jwt.verify(data.token, config.get('jwt-secret-key'), async(err, decodedToken) => {
                 if (err) {socket.emit('next-question', "error")}
                 if (decodedToken.role != "seyyed") {return socket.emit('next-question', "you are not seyyed")}
                 
                 socket.theCurrentQuestion = socket.quiz.questions.shift()
                 await redis.set('current-question',JSON.stringify(socket.theCurrentQuestion))
-                console.log(socket.theCurrentQuestion);
                 const thisQuestion = _.pick(socket.theCurrentQuestion, [
                     'questionTitle', 'difficulty', 'answer1', 'answer2', 'answer3', 'answer4'
                 ])
@@ -53,27 +52,16 @@ const io = (io) => {
             });
         });
         socket.on('answer', async(data) => {
-            await jwt.verify(data.token, config.get('jwt-secret-key'), async(err, decodedToken) => {
+            const quizTitle = JSON.parse(await redis.get('quizTitle'))
+            jwt.verify(data.token, config.get('jwt-secret-key'), async(err, decodedToken) => {
                 if (err) {socket.emit('next-question', "error")}
                 const redisCurrent = JSON.parse(await redis.get('current-question'))
-                console.log(redisCurrent);
-
-                console.log(data);
-
                 if (data.answer != redisCurrent.correctAnswer){
                     socket.emit('answer', 'wrong answer! you lost!')
                 }
-                return socket.emit('join', `please wait for next question in room: ${data.quizTitle}`)
+                return socket.emit('join', `please wait for next question in room: ${quizTitle}`)
             });
-
-            //get the user from the database
-
-
-
-
-
         });
-
     });
 };
   
