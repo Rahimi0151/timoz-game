@@ -11,7 +11,6 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server)
 
-
 let port = process.env.PORT
 if(process.env.NODE_ENV == 'test') port = Math.floor(Math.random()*60000)+5000;
 
@@ -29,6 +28,7 @@ require('./routes/games').io(io);
 
 // Start
 require('./start/database')()
+const redisClient = require('./start/redis').getClient();
 
 app.get('/api/start/test', async (req, res) => {
   res.send('Hello, world!');

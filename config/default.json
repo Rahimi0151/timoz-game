@@ -1,5 +1,10 @@
 {
     "database-connection-string": "mongodb://127.0.0.1:27017/vidly",
     "jwt-secret-key": "default-key",
-    "time-to-answer": 15000
+    "time-to-answer": 15000,
+    "redis": {
+        "db": "0",
+        "port": "6379",
+        "host": "127.0.0.1"
+    }
 }

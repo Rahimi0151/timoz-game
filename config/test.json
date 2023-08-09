@@ -1,4 +1,9 @@
 {
     "database-connection-string": "mongodb://127.0.0.1:27017/timoz_test",
-    "time-to-answer": 1
+    "time-to-answer": 1,
+    "redis": {
+        "db": "1",
+        "port": "6379",
+        "host": "localhost"
+    }
 }
