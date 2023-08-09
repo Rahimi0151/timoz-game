@@ -6,6 +6,7 @@ const config = require('config')
 const jwt = require('jsonwebtoken')
 const _ = require('underscore')
 const util = require('util');
+const redis = require('../start/redis').getClient()
 
 
 router.get('/', validateUser.isLogin, async(req, res) => {
@@ -20,6 +21,7 @@ router.get('/', validateUser.isLogin, async(req, res) => {
 const io = (io) => {
     io.on('connection', (socket) => {
         socket.users = []
+        socket.theCurrentQuestion = {}
         socket.on('join', async(data) => {
             jwt.verify(data.jwt, config.get('jwt-secret-key'), (error, decodedToken) => {
                 socket.user = decodedToken
@@ -32,12 +34,14 @@ const io = (io) => {
 
         socket.on('next-question', async(data) => {
             // const delay = util.promisify(setTimeout);
-
-            jwt.verify(data.token, config.get('jwt-secret-key'), (err, decodedToken) => {
+            jwt.verify(data.token, config.get('jwt-secret-key'), async(err, decodedToken) => {
                 if (err) {socket.emit('next-question', "error")}
                 if (decodedToken.role != "seyyed") {return socket.emit('next-question', "you are not seyyed")}
                 
-                const thisQuestion = _.pick(socket.quiz.questions.shift(), [
+                socket.theCurrentQuestion = socket.quiz.questions.shift()
+                await redis.set('current-question',JSON.stringify(socket.theCurrentQuestion))
+                console.log(socket.theCurrentQuestion);
+                const thisQuestion = _.pick(socket.theCurrentQuestion, [
                     'questionTitle', 'difficulty', 'answer1', 'answer2', 'answer3', 'answer4'
                 ])
                 io.in(socket.quiz.title).emit('next-question', thisQuestion)
@@ -48,6 +52,28 @@ const io = (io) => {
                 return
             });
         });
+        socket.on('answer', async(data) => {
+            await jwt.verify(data.token, config.get('jwt-secret-key'), async(err, decodedToken) => {
+                if (err) {socket.emit('next-question', "error")}
+                const redisCurrent = JSON.parse(await redis.get('current-question'))
+                console.log(redisCurrent);
+
+                console.log(data);
+
+                if (data.answer != redisCurrent.correctAnswer){
+                    socket.emit('answer', 'wrong answer! you lost!')
+                }
+                return socket.emit('join', `please wait for next question in room: ${data.quizTitle}`)
+            });
+
+            //get the user from the database
+
+
+
+
+
+        });
+
     });
 };
   
