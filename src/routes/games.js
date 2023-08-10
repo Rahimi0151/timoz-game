@@ -23,10 +23,14 @@ const io = (io) => {
         socket.users = []
         socket.theCurrentQuestion = {}
         socket.on('join', async(data) => {
-            jwt.verify(data.jwt, config.get('jwt-secret-key'), (error, decodedToken) => {
+            jwt.verify(data.jwt, config.get('jwt-secret-key'), async(error, decodedToken) => {
                 socket.user = decodedToken
                 socket.users.push(decodedToken)
+                addUser(decodedToken)
+                redis.sadd('users', data.jwt)
+                // console.log(decodedToken);
             })
+
             socket.quiz = await Quiz.findOne({title: data.quizTitle})
             await redis.set('quizTitle', JSON.stringify(data.quizTitle))
             socket.join(data.quizTitle)
@@ -37,7 +41,6 @@ const io = (io) => {
             jwt.verify(data.token, config.get('jwt-secret-key'), async(err, decodedToken) => {
                 if (err) {socket.emit('next-question', "error")}
                 if (decodedToken.role != "seyyed") {return socket.emit('next-question', "you are not seyyed")}
-                
                 socket.theCurrentQuestion = socket.quiz.questions.shift()
                 await redis.set('current-question',JSON.stringify(socket.theCurrentQuestion))
                 const thisQuestion = _.pick(socket.theCurrentQuestion, [
@@ -57,12 +60,30 @@ const io = (io) => {
                 if (err) {socket.emit('next-question', "error")}
                 const redisCurrent = JSON.parse(await redis.get('current-question'))
                 if (data.answer != redisCurrent.correctAnswer){
+                    await redis.srem('users', data.token)
                     socket.emit('answer', 'wrong answer! you lost!')
-                }
+                }                
+                if (await redis.scard('users') == 3) {socket.emit('winner', "you are the winner")}
+                console.log(await redis.scard('users') );
+
                 return socket.emit('join', `please wait for next question in room: ${quizTitle}`)
             });
         });
     });
 };
-  
+
+async function addUser(userId) {
+    const transaction = redis.multi();
+    transaction.sismember('users', userId);
+    transaction.sadd('users', userId);
+    await transaction.exec();
+}
+
+async function removeUser(userId) {
+    const transaction = client.multi();
+    transaction.sismember('users', userId);
+    transaction.srem('users', userId);
+    await transaction.exec();
+}
+
 module.exports = { router, io };
