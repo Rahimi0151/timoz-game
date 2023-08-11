@@ -28,7 +28,6 @@ const io = (io) => {
                 socket.users.push(decodedToken)
                 addUser(decodedToken)
                 redis.sadd('users', data.jwt)
-                // console.log(decodedToken);
             })
 
             socket.quiz = await Quiz.findOne({title: data.quizTitle})
@@ -64,8 +63,6 @@ const io = (io) => {
                     socket.emit('answer', 'wrong answer! you lost!')
                 }                
                 if (await redis.scard('users') == 3) {socket.emit('winner', "you are the winner")}
-                console.log(await redis.scard('users') );
-
                 return socket.emit('join', `please wait for next question in room: ${quizTitle}`)
             });
         });

@@ -342,7 +342,7 @@ describe('GET /api/game/', () => {
             await userAnswersPromise
         });
         
-        it.only('sends them to the next waitlist if their answer is correct', async () => { 
+        it('sends them to the next waitlist if their answer is correct', async () => { 
             const user1Socket = createUserSocket() 
             const user2Socket = createUserSocket() 
             const adminSocket = createAdminSocket()
