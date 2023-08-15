@@ -1,11 +1,11 @@
-const mongoose = require('mongoose');
-const config = require('config');
-const connectToDatabase = require('../../src/start/database');
+import mongoose from 'mongoose';
+import config from 'config';
+import connectToDatabase from '../../src/start/database';
 
 describe('Database Connection', () => {
   it('should connect to MongoDB successfully', async () => {
       
-    mongoose.connect = jest.fn().mockResolvedValue();
+    mongoose.connect = jest.fn().mockResolvedValue(true);
     console.log = jest.fn();
     const MONGODB_URI = config.get('database-connection-string');
       

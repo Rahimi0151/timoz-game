@@ -1,11 +1,12 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const validateUser = require('../middleware/validate/user')
-const bcrypt = require('bcryptjs')
-const User = require('../models/user')
-const _ = require('underscore')
+import { create, isLogin, isSeyyed } from '../middleware/validate/user';
+import bcrypt from 'bcryptjs';
+import User from '../models/user';
+import _ from 'underscore';
 
-router.post('/signup', validateUser.create, async(req, res) => {
+
+router.post('/signup', create, async(req, res) => {
     let hashedPassword
     try {hashedPassword = await bcrypt.hash(req.body.password, 10);}
     catch (err) {res.status(500).json({message: 'someting went wrong'})}
@@ -25,7 +26,7 @@ router.post('/signup', validateUser.create, async(req, res) => {
     res.status(201).json(_.pick(user, '_id', 'email', 'phone', 'username', 'lastName', 'firstName', 'role'));
 });
 
-router.post('/login', validateUser.login, async(req, res) => {
+router.post('/login', create, async(req, res) => {
     const user = await User.findOne({$or: [{username: req.body.username}, {email: req.body.username}]})
     if(!user) return res.status(400).json({message: 'incorrect email/password'})
     try {
@@ -40,4 +41,4 @@ router.post('/login', validateUser.login, async(req, res) => {
     res.status(200).set('x-auth-token', token).json({message: 'login successful'})
 });
 
-module.exports = router;
+export default router

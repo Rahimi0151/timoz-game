@@ -1,15 +1,15 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const validateUser = require('../middleware/validate/user')
-const Quiz = require('../models/quiz')
-const config = require('config')
-const jwt = require('jsonwebtoken')
-const _ = require('underscore')
-const util = require('util');
+import { isLogin } from '../middleware/validate/user';
+import Quiz from '../models/quiz';
+import config from 'config';
+import jwt, { JwtPayload } from 'jsonwebtoken';
+import _ from 'underscore';
+import { Server, Socket } from 'socket.io';
 const redis = require('../start/redis').getClient()
 
 
-router.get('/', validateUser.isLogin, async(req, res) => {
+router.get('/', isLogin, async(req, res) => {
     const activeQuiz = await Quiz.findOne({active: true})
     if (!activeQuiz) return res.status(400).json({message: "there is no active quiz"})
 
@@ -17,29 +17,46 @@ router.get('/', validateUser.isLogin, async(req, res) => {
 });
 
 //TODO:: add all the required socket connections
+declare module 'jsonwebtoken'{
+    interface JwtPayload {
+        email: string;
+        role: string;
+        username: string;
+        phone: string;
+    }
+}
 
-const io = (io) => {
+declare module 'socket.io' {
+    interface Socket {
+        users: JwtPayload[]
+        user: JwtPayload
+        theCurrentQuestion: any; //TODO: change this any type
+        quiz: any; //TODO: change this any type
+    }
+}
+
+const io = (io: Server) => {
     io.on('connection', (socket) => {
         socket.users = []
         socket.theCurrentQuestion = {}
         socket.on('join', async(data) => {
-            jwt.verify(data.jwt, config.get('jwt-secret-key'), async(error, decodedToken) => {
-                socket.user = decodedToken
-                socket.users.push(decodedToken)
-                addUser(decodedToken)
+            jwt.verify(<string>data.jwt, <string>config.get('jwt-secret-key'), async(error, decodedToken) => {
+                socket.user = decodedToken as JwtPayload
+                socket.users.push(decodedToken as JwtPayload)
+                addUser(decodedToken as JwtPayload)
                 redis.sadd('users', data.jwt)
             })
 
-            socket.quiz = await Quiz.findOne({title: data.quizTitle})
-            await redis.set('quizTitle', JSON.stringify(data.quizTitle))
-            socket.join(data.quizTitle)
-            io.in(data.quizTitle).emit('join', `please wait for game to start in room: ${data.quizTitle}`)
-        });
+        socket.quiz = await Quiz.findOne({title: data.quizTitle})
+        await redis.set('quizTitle', JSON.stringify(data.quizTitle))
+        socket.join(data.quizTitle)
+        io.in(data.quizTitle).emit('join', `please wait for game to start in room: ${data.quizTitle}`)
+    });
 
         socket.on('next-question', async(data) => {
-            jwt.verify(data.token, config.get('jwt-secret-key'), async(err, decodedToken) => {
+            jwt.verify(<string>data.token, <string>config.get('jwt-secret-key'), async(err, decodedToken) => {
                 if (err) {socket.emit('next-question', "error")}
-                if (decodedToken.role != "seyyed") {return socket.emit('next-question', "you are not seyyed")}
+                if ((decodedToken as JwtPayload)!.role! != "seyyed") {return socket.emit('next-question', "you are not seyyed")}
                 socket.theCurrentQuestion = socket.quiz.questions.shift()
                 await redis.set('current-question',JSON.stringify(socket.theCurrentQuestion))
                 const thisQuestion = _.pick(socket.theCurrentQuestion, [
@@ -55,7 +72,7 @@ const io = (io) => {
         });
         socket.on('answer', async(data) => {
             const quizTitle = JSON.parse(await redis.get('quizTitle'))
-            jwt.verify(data.token, config.get('jwt-secret-key'), async(err, decodedToken) => {
+            jwt.verify(data.token, config.get('jwt-secret-key'), async(err: any) => {
                 if (err) {socket.emit('next-question', "error")}
                 const redisCurrent = JSON.parse(await redis.get('current-question'))
                 if (data.answer != redisCurrent.correctAnswer){
@@ -69,18 +86,18 @@ const io = (io) => {
     });
 };
 
-async function addUser(userId) {
+async function addUser(userId: JwtPayload) {
     const transaction = redis.multi();
     transaction.sismember('users', userId);
     transaction.sadd('users', userId);
     await transaction.exec();
 }
 
-async function removeUser(userId) {
-    const transaction = client.multi();
+async function removeUser(userId: JwtPayload) {
+    const transaction = redis.multi();
     transaction.sismember('users', userId);
     transaction.srem('users', userId);
     await transaction.exec();
 }
 
-module.exports = { router, io };
+export { router, io };

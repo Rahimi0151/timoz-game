@@ -1,6 +1,6 @@
-const request = require('supertest');
-const bcrypt = require('bcryptjs')
-const User = require('../../src/models/user')
+import request from 'supertest';
+import bcrypt from 'bcryptjs';
+import User from '../../src/models/user';
 
 let server
 let payload = {}

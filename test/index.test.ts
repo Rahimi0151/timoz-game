@@ -1,4 +1,4 @@
-const request = require('supertest');
+import request from 'supertest';
 let server 
 
 beforeEach(() => {

@@ -1,5 +1,5 @@
-const request = require('supertest');
-const Quiz = require('../../src/models/quiz')
+import request from 'supertest';
+import Quiz from '../../src/models/quiz';
 
 let server
 let payload = {}

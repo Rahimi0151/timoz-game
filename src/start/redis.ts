@@ -1,5 +1,5 @@
-const config = require('config')
-const Redis = require('ioredis');
+import config from 'config';
+import Redis from 'ioredis';
 
 class RedisSingleton {
     constructor() {
@@ -20,4 +20,5 @@ class RedisSingleton {
     }
 }
 
-module.exports = new RedisSingleton();
+export default new RedisSingleton();
+

@@ -1,17 +1,17 @@
-const http = require('http');
-const express = require('express');
-const socketIo = require('socket.io')
+import http from 'http';
+import express from 'express';
+import socketIo from 'socket.io';
 
 // routes
-const users = require('./routes/users')
+import users from './routes/users';
 const games = require('./routes/games').router
-const quizes = require('./routes/quizes')
+import quizes from './routes/quizes';
 
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server)
 
-let port = process.env.PORT
+let port = parseInt(process.env.PORT!)
 if(process.env.NODE_ENV == 'test') port = Math.floor(Math.random()*60000)+5000;
 
 

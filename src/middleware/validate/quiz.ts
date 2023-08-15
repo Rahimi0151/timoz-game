@@ -1,6 +1,7 @@
-const yup = require('yup')
+import yup from 'yup';
+import { Request, Response, NextFunction } from 'express';
 
-const create = (req, res, next)=>{
+const create = (req: Request, res: Response, next: NextFunction)=>{
     const questionSchema = yup.object({
         questionTitle: yup.string().required('questionTitle required'),
         answer1: yup.string().required('answer1 required'),
@@ -23,3 +24,4 @@ const create = (req, res, next)=>{
 module.exports = {
     create: create
 }
+export { create };

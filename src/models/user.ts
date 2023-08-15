@@ -1,6 +1,19 @@
-const mongoose = require('mongoose');
-const config = require('config');
-const jwt = require('jsonwebtoken');
+import mongoose, { Mongoose } from 'mongoose';
+import config from 'config';
+import jwt from 'jsonwebtoken';
+
+export interface UserDocument extends mongoose.Document {
+    role: string
+    email: string
+    phone: string
+    points: number
+    createdAt: Date
+    username: string
+    password: string
+    lastName: string
+    firstName: string
+    generateJwt(): string
+}
 
 const userSchema = new mongoose.Schema({
     username: {
@@ -55,7 +68,7 @@ const userSchema = new mongoose.Schema({
 });
 
 userSchema.methods.generateJwt = function() {
-    const secretKey = config.get('jwt-secret-key')
+    const secretKey = <string>config.get('jwt-secret-key')
     const payload = {
         role: this.role,
         email: this.email,
@@ -65,6 +78,6 @@ userSchema.methods.generateJwt = function() {
     return jwt.sign(payload, secretKey);
 }
 
-const User = mongoose.model('User', userSchema);
+const User = mongoose.model<UserDocument>('User', userSchema);
 
-module.exports = User;
+export default User

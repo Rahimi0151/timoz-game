@@ -1,11 +1,11 @@
-const request = require('supertest');
-const Quiz = require('../../src/models/quiz')
-const User = require('../../src/models/user')
-const mongoose = require('mongoose')
-const io = require('socket.io-client');
-const bcrypt = require('bcrypt')
-const jsonwebtoken = require('jsonwebtoken')
-const config = require('config')
+import request from 'supertest';
+import Quiz from '../../src/models/quiz';
+import User from '../../src/models/user';
+import mongoose from 'mongoose';
+import io from 'socket.io-client';
+import bcrypt from 'bcryptjs';
+import jsonwebtoken from 'jsonwebtoken';
+import config from 'config';
 const redis = require('../../src/start/redis').getClient()
 
 let server
