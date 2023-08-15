@@ -9,7 +9,7 @@ import quizes from './routes/quizes';
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server)
+const io = new socketIo.Server(server)
 
 let port = parseInt(process.env.PORT!)
 if(process.env.NODE_ENV == 'test') port = Math.floor(Math.random()*60000)+5000;
