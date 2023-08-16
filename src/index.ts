@@ -1,19 +1,16 @@
-import http from 'http';
-import express from 'express';
-import socketIo from 'socket.io';
+import * as http from 'http';
+import * as express from 'express';
+import * as socketIo from 'socket.io';
+import connectToDatabase from './start/database';
 
 // routes
 import users from './routes/users';
 const games = require('./routes/games').router
 import quizes from './routes/quizes';
 
-const app = express();
+const app = express.default();
 const server = http.createServer(app);
 const io = new socketIo.Server(server)
-
-let port = parseInt(process.env.PORT!)
-if(process.env.NODE_ENV == 'test') port = Math.floor(Math.random()*60000)+5000;
-
 
 // Middleware
 app.use(express.json());
@@ -27,14 +24,16 @@ app.use('/api/users',users)
 require('./routes/games').io(io);
 
 // Start
-require('./start/database')()
-const redisClient = require('./start/redis').getClient();
+connectToDatabase()
 
 app.get('/api/start/test', async (req, res) => {
   res.send('Hello, world!');
 });
 
 // Start the server
-server.listen(port, () => {});
+let port = parseInt(process.env.PORT!) || 3000
+if(process.env.NODE_ENV == 'test') port = Math.floor(Math.random()*60000)+5000;
 
-module.exports = { server }
+const serverInstance = server.listen(port, () => {});
+
+export { serverInstance, io }

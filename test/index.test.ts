@@ -1,12 +1,16 @@
+import {describe, it, expect, test, beforeEach, beforeAll, afterAll, afterEach} from '@jest/globals';
 import request from 'supertest';
-let server 
+import http from 'http'
+import { serverInstance } from '../src/index'
+
+let server: http.Server
 
 beforeEach(() => {
-    server = require('../src/index').server;
+    server = serverInstance
 });
 
 afterEach(async() => {
-    await server.close();
+    server.close();
 });
 
 describe('GET /api/start/test', () => {

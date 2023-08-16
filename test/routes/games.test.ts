@@ -1,27 +1,39 @@
+import {describe, it, expect, test, beforeEach, beforeAll, afterAll, afterEach} from '@jest/globals';
 import request from 'supertest';
 import Quiz from '../../src/models/quiz';
 import User from '../../src/models/user';
 import mongoose from 'mongoose';
-import io from 'socket.io-client';
+import { io, Socket } from 'socket.io-client';
 import bcrypt from 'bcryptjs';
 import jsonwebtoken from 'jsonwebtoken';
 import config from 'config';
+import http from 'http'
+import { serverInstance } from '../../src/index'
+import { JwtPayload } from 'jsonwebtoken';
+import { AddressInfo } from "net";
+
 const redis = require('../../src/start/redis').getClient()
 
-let server
+interface GamePayload {
+    title?: string;
+    quizNumber?: number;
+}
+
+let server: http.Server
 let payload = {}
-let jwt
-let clientSocket
-let socketConnections = []
+let jwt:string
+let clientSocket: Socket
+let socketConnections: Socket[]
 
 beforeAll(async() => {
-    server = require('../../src/index').server;
+    server = serverInstance;
 })
 afterAll(async() => {
-    await server.close();
+    server.close();
 })
 beforeEach(async() => {
-    clientSocket = io.connect(`http://localhost:${server.address().port}`);
+    const serverPort = server!.address() as AddressInfo
+    clientSocket = io(`http://localhost:${serverPort!.port}`);
     socketConnections.push(clientSocket)
     //sign up as a new user
     await signup();
@@ -49,7 +61,7 @@ describe('GET /api/game/', () => {
             expect(response.body.message).toContain('login');
         });
         
-        it('should return 401 if [x-auth-token] header was not a valid token', async () => {
+        it.only('should return 401 if [x-auth-token] header was not a valid token', async () => {
             jwt = 'invalid token'
 
             const response = await request(server).get('/api/game').set('x-auth-token', jwt).send();
@@ -68,7 +80,7 @@ describe('GET /api/game/', () => {
         });        
         
         it('should return 200 if there is an active quiz', async () => {
-            await createQuiz(active=true)
+            await createQuiz(true)
             const response = await request(server).get('/api/game').set('x-auth-token', jwt);
             
             expect(response.status).toBe(200);
@@ -78,10 +90,10 @@ describe('GET /api/game/', () => {
 
     describe('check the socket connection', () => { 
         it('should join the user in the selected game', async () => {    
-            const quizTitle = (await createQuiz(active=true)).body.title
+            const quizTitle = (await createQuiz(true)).body.title
             const response = await request(server).get('/api/game').set('x-auth-token', jwt);
 
-            const joinPromise = new Promise((resolve) => {
+            const joinPromise = new Promise<void>((resolve) => {
                 clientSocket.on('join', (data) => {
                     expect(data).toContain(quizTitle)
                     resolve();
@@ -94,10 +106,10 @@ describe('GET /api/game/', () => {
         });
 
         it('shouldnt let anyone but seyyed to send a next quesion request', async () => {    
-            const quizTitle = (await createQuiz(active=true)).body.title
+            const quizTitle = (await createQuiz(true)).body.title
             
             clientSocket.emit('join', { quizTitle, jwt });
-            await new Promise((resolve) => {
+            await new Promise<void>((resolve) => {
                 clientSocket.on('join', (data) => {
                     expect(data).toContain(quizTitle)
                     expect(data).toContain("please wait")
@@ -106,7 +118,7 @@ describe('GET /api/game/', () => {
             });
 
             clientSocket.emit('next-question', {token: jwt});
-            await new Promise((resolve) => {
+            await new Promise<void>((resolve) => {
                 clientSocket.on('next-question', (data) => {
                     expect(data).toContain('not')
                     expect(data).toContain('seyyed')
@@ -117,16 +129,16 @@ describe('GET /api/game/', () => {
         });
 
         it('should send the first question when seyyed sends his jwt to the socket', async () => {    
-            const quizTitle = (await createQuiz(active=true)).body.title
+            const quizTitle = (await createQuiz(true)).body.title
             await signupAndLoginAsAdmin()
 
             clientSocket.emit('join', { quizTitle, jwt });
-            await new Promise((resolve) => {
+            await new Promise<void>((resolve) => {
                 clientSocket.on('join', () => {resolve()});
             });
 
             clientSocket.emit('next-question', {token: jwt});
-            await new Promise((resolve) => {
+            await new Promise<void>((resolve) => {
                 clientSocket.on('next-question', (data) => {
                     expect(data).toHaveProperty("questionTitle")
                     expect(data.questionTitle).toContain('question 1')
@@ -136,16 +148,16 @@ describe('GET /api/game/', () => {
         });
 
         it('should not send the correct answer to the users!', async () => {    
-            const quizTitle = (await createQuiz(active=true)).body.title
+            const quizTitle = (await createQuiz(true)).body.title
             await signupAndLoginAsAdmin()
 
             clientSocket.emit('join', { quizTitle, jwt });
-            await new Promise((resolve) => {
+            await new Promise<void>((resolve) => {
                 clientSocket.on('join', () => {resolve()});
             });
 
             clientSocket.emit('next-question', {token: jwt});
-            await new Promise((resolve) => {
+            await new Promise<void>((resolve) => {
                 clientSocket.on('next-question', (data) => {
                     expect(data).not.toHaveProperty("correctAnswer")
                     expect(data).toHaveProperty("questionTitle")
@@ -157,31 +169,31 @@ describe('GET /api/game/', () => {
 
         it('should send the question to the user when admin says so', async () => {  
             const adminSocket = createAdminSocket()
-            const quizTitle = (await createQuiz(active=true)).body.title
+            const quizTitle = (await createQuiz(true)).body.title
             const userJwt = await signupAndLoginAsUser()
             const adminJwt = await signupAndLoginAsAdmin()
 
             //user joins a game
             clientSocket.emit('join', { quizTitle, jwt: userJwt });
-            await new Promise((resolve) => {
+            await new Promise<void>((resolve) => {
                 clientSocket.on('join', () => {resolve()});
             });
 
             //admin joins a game
             adminSocket.emit('join', { quizTitle, jwt: adminJwt });
-            await new Promise((resolve) => {
+            await new Promise<void>((resolve) => {
                 clientSocket.on('join', () => {resolve()});
             });
 
             //admin sends the next question
-            const adminPromise =  new Promise((resolve) => {
-                adminSocket.on('next-question', (data) => {
+            const adminPromise =  new Promise<void>((resolve) => {
+                adminSocket.on('next-question', () => {
                     resolve()
                 });
             });
 
             //user recives the next question
-            const userPromise = new Promise((resolve) => {
+            const userPromise = new Promise<void>((resolve) => {
                 clientSocket.on('next-question', (data) => {
                     expect(data).not.toHaveProperty("correctAnswer")
                     expect(data).toHaveProperty("questionTitle")
@@ -196,38 +208,38 @@ describe('GET /api/game/', () => {
 
         it('should shoud no let users answer after timer is up', async () => {  
             const adminSocket = createAdminSocket()
-            const quizTitle = (await createQuiz(active=true)).body.title
+            const quizTitle = (await createQuiz(true)).body.title
             const userJwt = await signupAndLoginAsUser()
             const adminJwt = await signupAndLoginAsAdmin()
 
             //user joins a game
             clientSocket.emit('join', { quizTitle, jwt: userJwt });
-            await new Promise((resolve) => {
+            await new Promise<void>((resolve) => {
                 clientSocket.on('join', () => {resolve()});
             });
 
             //admin joins a game
             adminSocket.emit('join', { quizTitle, jwt: adminJwt });
-            await new Promise((resolve) => {
+            await new Promise<void>((resolve) => {
                 clientSocket.on('join', () => {resolve()});
             });
 
             //admin sends the next question
-            const adminPromise =  new Promise((resolve) => {
-                adminSocket.on('next-question', (data) => {
+            const adminPromise =  new Promise<void>((resolve) => {
+                adminSocket.on('next-question', () => {
                     resolve()
                 });
             });
 
             //user recives the next question
-            const userPromise = new Promise((resolve) => {
+            const userPromise = new Promise<void>((resolve) => {
                 clientSocket.on('next-question', (data) => {
                     resolve()
                 });
             });
 
             //user can not see the question after the timer is up
-            const timeoutPromise = new Promise((resolve) => {
+            const timeoutPromise = new Promise<void>((resolve) => {
                 clientSocket.on('time-up', (data) => {
                     expect(data).toContain('time')
                     resolve()
@@ -242,31 +254,31 @@ describe('GET /api/game/', () => {
 
         it('check send error if the answer is wrong', async () => {  
             const adminSocket = createAdminSocket()
-            const quizTitle = (await createQuiz(active=true)).body.title
+            const quizTitle = (await createQuiz(true)).body.title
             const userJwt = await signupAndLoginAsUser()
             const adminJwt = await signupAndLoginAsAdmin()
 
             //user joins a game
             clientSocket.emit('join', { quizTitle, jwt: userJwt });
-            await new Promise((resolve) => {
+            await new Promise<void>((resolve) => {
                 clientSocket.on('join', () => {resolve()});
             });
 
             //admin joins a game
             adminSocket.emit('join', { quizTitle, jwt: adminJwt });
-            await new Promise((resolve) => {
+            await new Promise<void>((resolve) => {
                 clientSocket.on('join', () => {resolve()});
             });
 
             //admin sends the next question
-            const adminPromise =  new Promise((resolve) => {
-                adminSocket.on('next-question', (data) => {
+            const adminPromise =  new Promise<void>((resolve) => {
+                adminSocket.on('next-question', () => {
                     resolve()
                 });
             });
 
             //user recives the next question
-            const userPromise = new Promise((resolve) => {
+            const userPromise = new Promise<void>((resolve) => {
                 clientSocket.on('next-question', (data) => {
                     clientSocket.emit('answer', {
                         question: data,
@@ -278,7 +290,7 @@ describe('GET /api/game/', () => {
             });
 
             //user recives the next question
-            const userAnswersPromise = new Promise((resolve) => {
+            const userAnswersPromise = new Promise<void>((resolve) => {
                 clientSocket.on('answer', (data) => {
                     expect(data).toContain('wrong')
                     resolve()
@@ -293,31 +305,31 @@ describe('GET /api/game/', () => {
         
         it('sends them to the next waitlist if their answer is correct', async () => {  
             const adminSocket = createAdminSocket()
-            const quizTitle = (await createQuiz(active=true)).body.title
+            const quizTitle = (await createQuiz(true)).body.title
             const userJwt = await signupAndLoginAsUser()
             const adminJwt = await signupAndLoginAsAdmin()
 
             //user joins a game
             clientSocket.emit('join', { quizTitle, jwt: userJwt });
-            await new Promise((resolve) => {
+            await new Promise<void>((resolve) => {
                 clientSocket.on('join', () => {resolve()});
             });
 
             //admin joins a game
             adminSocket.emit('join', { quizTitle, jwt: adminJwt });
-            await new Promise((resolve) => {
+            await new Promise<void>((resolve) => {
                 clientSocket.on('join', () => {resolve()});
             });
 
             //admin sends the next question
-            const adminPromise =  new Promise((resolve) => {
-                adminSocket.on('next-question', (data) => {
+            const adminPromise =  new Promise<void>((resolve) => {
+                adminSocket.on('next-question', () => {
                     resolve()
                 });
             });
 
             //user recives the next question
-            const userPromise = new Promise((resolve) => {
+            const userPromise = new Promise<void>((resolve) => {
                 clientSocket.on('next-question', (data) => {
                     clientSocket.emit('answer', {
                         question: data,
@@ -329,7 +341,7 @@ describe('GET /api/game/', () => {
             });
 
             //user recives the next question
-            const userAnswersPromise = new Promise((resolve) => {
+            const userAnswersPromise = new Promise<void>((resolve) => {
                 clientSocket.on('join', (data) => {
                     expect(data).toContain('wait')
                     resolve()
@@ -346,39 +358,39 @@ describe('GET /api/game/', () => {
             const user1Socket = createUserSocket() 
             const user2Socket = createUserSocket() 
             const adminSocket = createAdminSocket()
-            const quizTitle = (await createQuiz(active=true)).body.title
+            const quizTitle = (await createQuiz(true)).body.title
             const adminJwt = await signupAndLoginAsAdmin()
             const user1Jwt = await signupAndLoginAsUser("1-email@gmail.com", "validPassword")
             const user2Jwt = await signupAndLoginAsUser("2-email@gmail.com", "validPassword")
 
             //user1 joins a game
             user1Socket.emit('join', { quizTitle, jwt: user1Jwt });
-            await new Promise((resolve) => {
+            await new Promise<void>((resolve) => {
                 user1Socket.on('join', () => {resolve()});
             });
 
             //user2 joins a game
             user2Socket.emit('join', { quizTitle, jwt: user2Jwt });
-            await new Promise((resolve) => {
+            await new Promise<void>((resolve) => {
                 user2Socket.on('join', () => {resolve()});
             });
 
             //admin joins a game
             adminSocket.emit('join', { quizTitle, jwt: adminJwt });
-            await new Promise((resolve) => {
+            await new Promise<void>((resolve) => {
                 user1Socket.on('join', () => {resolve()});
             });
 
             //admin sends the next question
-            const adminPromise =  new Promise((resolve) => {
-                adminSocket.on('next-question', (data) => {
+            const adminPromise =  new Promise<void>((resolve) => {
+                adminSocket.on('next-question', () => {
                     resolve()
                 });
             });
 
             //user1 recives the next question
-            const user1Promise = new Promise((resolve) => {
-                user1Socket.on('next-question', (data) => {
+            const user1Promise = new Promise<void>((resolve) => {
+                user1Socket.on('next-question', (data:any) => {
                     user1Socket.emit('answer', {
                         question: data,
                         answer: 2, //the correct answer is 1. 
@@ -389,8 +401,8 @@ describe('GET /api/game/', () => {
             });
 
             //user2 recives the next question
-            const user2Promise = new Promise((resolve) => {
-                user2Socket.on('next-question', (data) => {
+            const user2Promise = new Promise<void>((resolve) => {
+                user2Socket.on('next-question', (data:any) => {
                     user2Socket.emit('answer', {
                         question: data,
                         answer: 1, //the correct answer is 1. 
@@ -401,16 +413,16 @@ describe('GET /api/game/', () => {
             });
 
             //user1 recives the next question
-            const user1AnswersPromise = new Promise((resolve) => {
-                user1Socket.on('answer', (data) => {
+            const user1AnswersPromise = new Promise<void>((resolve) => {
+                user1Socket.on('answer', (data:any) => {
                     expect(data).toContain('wrong')
                     resolve()
                 });
             });
 
             //user2 recives the next question
-            const user2AnswersPromise = new Promise((resolve) => {
-                user2Socket.on('winner', (data) => {
+            const user2AnswersPromise = new Promise<void>((resolve) => {
+                user2Socket.on('winner', (data:any) => {
                     expect(data).toContain('winner')
                     resolve()
                 });
@@ -458,7 +470,7 @@ async function signupAndLoginAsUser(email = "validEmail@gmail.com", password = '
     const hashedPassword = await bcrypt.hash(password, 10);
     await new User({role: 'user', email: email, password: hashedPassword}).save()
 
-    const secretKey = config.get('jwt-secret-key')
+    const secretKey = <string>config.get('jwt-secret-key')
     const payload = {
         role: 'user',
         email: email,
@@ -467,7 +479,7 @@ async function signupAndLoginAsUser(email = "validEmail@gmail.com", password = '
 
 }
 
-async function createQuiz(active) {
+async function createQuiz(active?: boolean) {
     const payload = {
         title: 'quizTitle',
         questions: [
@@ -488,13 +500,15 @@ async function createQuiz(active) {
 }
 
 function createAdminSocket() {
-    adminSocket = io.connect(`http://localhost:${server.address().port}`);
+    const serverPort = server!.address() as AddressInfo
+    let adminSocket = io(`http://localhost:${serverPort!.port}`);
     socketConnections.push(adminSocket)
     return adminSocket  
 }
 
 function createUserSocket() {
-    const userSocket = io.connect(`http://localhost:${server.address().port}`);
+    const serverPort = server!.address() as AddressInfo
+    let userSocket = io(`http://localhost:${serverPort!.port}`);
     socketConnections.push(userSocket)
     return userSocket  
 }

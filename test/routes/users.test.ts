@@ -1,12 +1,21 @@
+import {describe, jest, it, expect, test, beforeEach, beforeAll, afterAll, afterEach} from '@jest/globals';
 import request from 'supertest';
 import bcrypt from 'bcryptjs';
 import User from '../../src/models/user';
+import http from 'http'
+import { serverInstance } from '../../src/index'
 
-let server
-let payload = {}
+interface UserPayload {
+    email?: string;
+    password?: string;
+    username?: string
+}
+
+let server: http.Server
+let payload:UserPayload = {}
 
 beforeEach(async() => {
-    server = require('../../src/index').server;
+    server = serverInstance;
     payload.email = 'validEmail@gmail.com'
     payload.password = 'validPassword'
     await User.deleteMany({})
@@ -69,7 +78,7 @@ describe('POST /api/users/signup', () => {
         // console.log('test case: 1')
 
         // bcrypt.hash = jest.fn().mockResolvedValue("hashed-password")
-        const mockBcrypt = jest.spyOn(bcrypt, 'hash').mockResolvedValue('hashed-password');
+        const mockBcrypt = jest.spyOn(bcrypt, 'hash').mockResolvedValue('hashed-password' as never);
 
         await request(server).post('/api/users/signup').send(payload);
 
@@ -114,7 +123,7 @@ describe('POST /api/users/signup', () => {
 
         const userInDB = await User.findOne({email: payload.email})
 
-        expect(userInDB.email).toBe(payload.email)
+        expect(userInDB!.email).toBe(payload.email)
     });
 
     it('should return the saved user', async() => {

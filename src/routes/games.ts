@@ -6,7 +6,7 @@ import config from 'config';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import _ from 'underscore';
 import { Server, Socket } from 'socket.io';
-const redis = require('../start/redis').getClient()
+import redis from '../start/redis';
 
 
 router.get('/', isLogin, async(req, res) => {
@@ -71,10 +71,10 @@ const io = (io: Server) => {
             });
         });
         socket.on('answer', async(data) => {
-            const quizTitle = JSON.parse(await redis.get('quizTitle'))
+            const quizTitle = JSON.parse(await redis.get("quizTitle") || 'null');
             jwt.verify(data.token, config.get('jwt-secret-key'), async(err: any) => {
                 if (err) {socket.emit('next-question', "error")}
-                const redisCurrent = JSON.parse(await redis.get('current-question'))
+                const redisCurrent = JSON.parse(await redis.get('current-question') || '{}');
                 if (data.answer != redisCurrent.correctAnswer){
                     await redis.srem('users', data.token)
                     socket.emit('answer', 'wrong answer! you lost!')
@@ -87,16 +87,16 @@ const io = (io: Server) => {
 };
 
 async function addUser(userId: JwtPayload) {
-    const transaction = redis.multi();
-    transaction.sismember('users', userId);
-    transaction.sadd('users', userId);
+    const transaction = await redis.multi();
+    transaction.sismember('users', JSON.stringify(userId));
+    transaction.sadd('users', JSON.stringify(userId));
     await transaction.exec();
 }
 
 async function removeUser(userId: JwtPayload) {
-    const transaction = redis.multi();
-    transaction.sismember('users', userId);
-    transaction.srem('users', userId);
+    const transaction = await redis.multi();
+    transaction.sismember('users', JSON.stringify(userId));
+    transaction.srem('users', JSON.stringify(userId));
     await transaction.exec();
 }
 

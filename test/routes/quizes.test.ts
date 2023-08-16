@@ -1,11 +1,30 @@
+import {describe, it, expect, test, beforeEach, beforeAll, afterAll, afterEach} from '@jest/globals';
 import request from 'supertest';
 import Quiz from '../../src/models/quiz';
+import http from 'http'
+import { serverInstance } from '../../src/index'
 
-let server
-let payload = {}
+interface Question {
+    questionTitle: string;
+    correctAnswer: number;
+    answer1: string;
+    answer2: string;
+    answer3: string;
+    answer4: string;
+    difficulty?: string;
+}
+
+interface QuizPayload {
+    title?: string;
+    questions?: Question[];
+    quizNumber?: number;
+}
+
+let server: http.Server
+let payload:QuizPayload = {}
 
 beforeEach(async() => {
-    server = require('../../src/index').server;
+    server = serverInstance;
     payload = {
         title: 'first quiz',
         questions: [
@@ -54,7 +73,7 @@ describe('POST /api/quiz/', () => {
         });
 
         it('should return 400 if a question did not have a valid title', async () => {
-            payload.questions[0].questionTitle = ''
+            payload.questions![0].questionTitle = ''
 
             const response = await request(server).post('/api/quiz').send(payload);
 
@@ -63,7 +82,7 @@ describe('POST /api/quiz/', () => {
         });
 
         it('should return 400 if a question did not have a valid answer1', async () => {
-            payload.questions[0].answer1 = ''
+            payload.questions![0].answer1 = ''
 
             const response = await request(server).post('/api/quiz').send(payload);
 
@@ -72,7 +91,7 @@ describe('POST /api/quiz/', () => {
         });
 
         it('should return 400 if a question did not have a correctAnswer', async () => {
-            payload.questions[0].correctAnswer = ''
+            payload.questions![0].correctAnswer = NaN
 
             const response = await request(server).post('/api/quiz').send(payload);
 
@@ -81,7 +100,7 @@ describe('POST /api/quiz/', () => {
         });
 
         it('should return 400 if a question\'s correctAnswer is not between 1 and 4', async () => {
-            payload.questions[0].correctAnswer = 5
+            payload.questions![0].correctAnswer = 5
 
             const response = await request(server).post('/api/quiz').send(payload);
 
@@ -90,7 +109,7 @@ describe('POST /api/quiz/', () => {
         });
 
         it('should return 400 if a question\'s difficulty is not valid', async () => {
-            payload.questions[0].difficulty = 'some invalid difficulty'
+            payload.questions![0].difficulty = 'some invalid difficulty'
 
             const response = await request(server).post('/api/quiz').send(payload);
 
@@ -110,7 +129,7 @@ describe('POST /api/quiz/', () => {
         await request(server).post('/api/quiz').send(payload);
 
         const quizInDB = await Quiz.findOne({title: payload.title})
-        expect(quizInDB.quizNumber).toBe(2)
+        expect(quizInDB!.quizNumber).toBe(2)
     });
     
     it('should save the correct quiz to the database', async () => {
@@ -131,6 +150,6 @@ describe('POST /api/quiz/', () => {
 
         expect(response.body.quizNumber).toBe(1)
         expect(response.body.title).toBe(payload.title)
-        expect(response.body.questions).toHaveLength(payload.questions.length)
+        expect(response.body.questions).toHaveLength(payload.questions!.length)
     });
 });

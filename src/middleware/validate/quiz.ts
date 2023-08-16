@@ -1,4 +1,4 @@
-import yup from 'yup';
+import * as yup from 'yup';
 import { Request, Response, NextFunction } from 'express';
 
 const create = (req: Request, res: Response, next: NextFunction)=>{
