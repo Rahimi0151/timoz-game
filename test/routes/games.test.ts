@@ -12,7 +12,7 @@ import { serverInstance } from '../../src/index'
 import { JwtPayload } from 'jsonwebtoken';
 import { AddressInfo } from "net";
 
-const redis = require('../../src/start/redis').getClient()
+import redis from '../../src/start/redis';
 
 interface GamePayload {
     title?: string;
@@ -23,7 +23,7 @@ let server: http.Server
 let payload = {}
 let jwt:string
 let clientSocket: Socket
-let socketConnections: Socket[]
+let socketConnections: Socket[] = []
 
 beforeAll(async() => {
     server = serverInstance;
@@ -61,7 +61,7 @@ describe('GET /api/game/', () => {
             expect(response.body.message).toContain('login');
         });
         
-        it.only('should return 401 if [x-auth-token] header was not a valid token', async () => {
+        it('should return 401 if [x-auth-token] header was not a valid token', async () => {
             jwt = 'invalid token'
 
             const response = await request(server).get('/api/game').set('x-auth-token', jwt).send();
@@ -435,7 +435,7 @@ describe('GET /api/game/', () => {
             await user1AnswersPromise
             await user2AnswersPromise
             // Promise.all([adminPromise, user1Promise, user2Promise, user1AnswersPromise, user2AnswersPromise])
-        }, 2000);
+        });
     });
 });
 

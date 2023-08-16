@@ -54,7 +54,10 @@ class RedisSingleton {
     async multi(): Promise<Pipeline> {
         return this.client.multi() as Pipeline;
     }
-
+    
+    async flushall(): Promise<'OK'> {
+        return this.client.flushall();
+    }
 }
 
 export default RedisSingleton.getInstance();
