@@ -354,6 +354,7 @@ describe('GET /api/game/', () => {
             await userAnswersPromise
         });
         
+        //TODO: this test does not work properly! fix this. in games.ts, scard('users') should not be 5, it should be 3
         it('sends them to the next waitlist if their answer is correct', async () => { 
             const user1Socket = createUserSocket() 
             const user2Socket = createUserSocket() 
@@ -362,7 +363,7 @@ describe('GET /api/game/', () => {
             const adminJwt = await signupAndLoginAsAdmin()
             const user1Jwt = await signupAndLoginAsUser("1-email@gmail.com", "validPassword")
             const user2Jwt = await signupAndLoginAsUser("2-email@gmail.com", "validPassword")
-
+            
             //user1 joins a game
             user1Socket.emit('join', { quizTitle, jwt: user1Jwt });
             await new Promise<void>((resolve) => {

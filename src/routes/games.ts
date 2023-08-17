@@ -79,7 +79,8 @@ const io = (io: Server) => {
                     await redis.srem('users', data.token)
                     socket.emit('answer', 'wrong answer! you lost!')
                 }                
-                if (await redis.scard('users') == 3) {socket.emit('winner', "you are the winner")}
+                if (await redis.scard('users') == 5) {socket.emit('winner', "you are the winner")}
+                
                 return socket.emit('join', `please wait for next question in room: ${quizTitle}`)
             });
         });

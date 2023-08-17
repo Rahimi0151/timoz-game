@@ -58,6 +58,10 @@ class RedisSingleton {
     async flushall(): Promise<'OK'> {
         return this.client.flushall();
     }
+    
+    async smembers(key: string): Promise<string[]> {
+        return this.client.smembers(key);
+    }
 }
 
 export default RedisSingleton.getInstance();
