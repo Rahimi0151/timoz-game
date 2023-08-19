@@ -1,0 +1,123 @@
+openapi: 3.0.3
+info:
+    title: Timoz Game
+    description: a technical deom, showcasing Node, TypeScript, Redis, MongoDB, OpenAPI, Socket.io, ...
+    version: 1.0.0
+
+paths:
+    /api/users/signup:
+        post:
+            summary: Register a new user
+            description: registering a new user by having its username,email,password
+            requestBody:
+                required: true
+                description: Successful response with a list of books
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                email: 
+                                    type: string
+                                    format: email
+                                    maxLength: 255
+                                password: 
+                                    type: string
+                                    maxLength: 255
+                                    minLength: 8
+                                username: 
+                                    type: string
+                                    maxLength: 255
+                                    minLength: 8
+                                firstName: 
+                                    type: string
+                                    maxLength: 255
+                                lastName: 
+                                    type: string
+                                    maxLength: 255
+                                phone: 
+                                    type: string
+                                    format: phone
+                                    maxLength: 255
+                            required:
+                                - email
+                                - password
+                            example:
+                                first name: Ali
+                                last name: Rahimi
+                                username: rahimi0151
+                                password: super secret password
+                                email: rahimi0151@gmail.com
+                                phone: "+989114724840"
+            responses:
+                '201':
+                    description: Successful response that registered a user
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    _id:
+                                        type: string
+                                        format: objectId
+                                    email:
+                                        type: string
+                                    phone:
+                                        type: string
+                                    username:
+                                        type: string
+                                    role:
+                                        type: string
+                                    firstName:
+                                        type: string
+                                    lastName:
+                                        type: string
+                                required:
+                                    - email
+                                    - _id
+                                    - role
+                            example:
+                                _id: 507f1f77bcf86cd799439011
+                                email: rahimi0151@gmail.com
+                                role: user
+                                first name: Ali
+                                last name: Rahimi
+                                username: rahimi0151
+                                password: super secret password
+                                phone: "+989114724840"
+                '400':
+                    description: Bad Request (most likely, a validation failed)
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                            examples:
+                                password too short:                         #TODO: add the real message here
+                                    value:
+                                        message: Invalid email format
+                                no password provided:                       #TODO: add the real message here
+                                    value:
+                                        message: Username must be 
+                                no email provided:                          #TODO: add the real message here
+                                    value:
+                                        message: Usernamet 5 characters
+                                email longer than 255:                      #TODO: add the real message here
+                                    value:
+                                        message: Usernameast 5 characters
+                                email wrong format:                         #TODO: add the real message here
+                                    value:
+                                        message: Username must 5 characters
+                                email was taken:                            #TODO: add the real message here
+                                    value:
+                                        message: Us least 5 characters
+                                username was taken:                         #TODO: add the real message here
+                                    value:
+                                        message: Usernacters
+
+
+#TODO: /api/game
+#TODO: /api/quiz
+#TODO: /api/users/user
