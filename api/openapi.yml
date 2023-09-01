@@ -3,7 +3,47 @@ info:
     title: Timoz Game
     description: a technical deom, showcasing Node, TypeScript, Redis, MongoDB, OpenAPI, Socket.io, ...
     version: 1.0.0
-
+components:
+    schemas:
+        question:
+            type: object
+            properties:
+                    questionTitle:
+                        type: string
+                        example: which country has the most population on earth?
+                    answer1:
+                        type: string
+                        example: china
+                    answer2:
+                        type: string
+                        example: USA
+                    answer3:
+                        type: string
+                        example: india
+                    answer4:
+                        type: string
+                        example: singapore
+                    correctAnswer:
+                        type: integer
+                        example: 1
+                    difficaulty:
+                        type: string
+                        enum:
+                            - easy
+                            - normal
+                            - hard
+                            - expert
+                        example: easy
+        quiz:
+            type: object
+            properties:
+                    quizTitle:
+                        type: string
+                        example: gerography test!
+                    questions:
+                        type: array
+                        items:
+                            $ref: "#/components/schemas/question"
 paths:
     /api/users/signup:
         post:
@@ -116,8 +156,146 @@ paths:
                                 username was taken:                         #TODO: add the real message here
                                     value:
                                         message: Usernacters
-
+    /api/users/login:
+        post:
+            summary: login user
+            description: logs a user in and sends their jwt back
+            requestBody:
+                required: true
+                description: Successful response with a list of books
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                email: 
+                                    type: string
+                                    format: email
+                                    maxLength: 255
+                                password: 
+                                    type: string
+                                    maxLength: 255
+                                    minLength: 8
+                            required:
+                                - email
+                                - password
+                            example:
+                                password: super secret password
+                                email: rahimi0151@gmail.com
+            responses:
+                '201':
+                    description: Successful response that logs a user in
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                                        format: objectId
+                                        example: login successful
+                                required:
+                                    - message
+                    headers:
+                        X-auth-token:
+                            description: the jwt of the user
+                            schema:
+                                type: string
+                                example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+                '400':
+                    description: Bad Request (most likely, a validation failed)
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                            examples:
+                                password too short:                         #TODO: add the real message here
+                                    value:
+                                        message: Invalid email format
+                                no password provided:                       #TODO: add the real message here
+                                    value:
+                                        message: Username must be 
+                                incorrect password:                         #TODO: add the real message here
+                                    value:
+                                        message: Username must be 
+                                no email provided:                          #TODO: add the real message here
+                                    value:
+                                        message: Usernamet 5 characters
+                                email longer than 255:                      #TODO: add the real message here
+                                    value:
+                                        message: Usernameast 5 characters
+                                email wrong format:                         #TODO: add the real message here
+                                    value:
+                                        message: Username must 5 characters
+                                no user with the given email:               #TODO: add the real message here
+                                    value:
+                                        message: Us least 5 characters
+    /api/quiz:
+        post:
+            summary: creates a new quiz
+            description: creates a new quiz if the user is both an admin and also loged in
+            security:
+                - bearerAuth: []
+            requestBody:
+                required: true
+                description: Successful response with the created quiz
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/quiz"
+            responses:
+                '201':
+                    description: Successful response that logs a user in
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                                        format: objectId
+                                        example: login successful
+                                required:
+                                    - message
+                    headers:
+                        X-auth-token:
+                            description: the jwt of the user
+                            schema:
+                                type: string
+                                example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+                '400':
+                    description: Bad Request (most likely, a validation failed)
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                            examples:
+                                password too short:                         #TODO: add the real message here
+                                    value:
+                                        message: Invalid email format
+                                no password provided:                       #TODO: add the real message here
+                                    value:
+                                        message: Username must be 
+                                incorrect password:                         #TODO: add the real message here
+                                    value:
+                                        message: Username must be 
+                                no email provided:                          #TODO: add the real message here
+                                    value:
+                                        message: Usernamet 5 characters
+                                email longer than 255:                      #TODO: add the real message here
+                                    value:
+                                        message: Usernameast 5 characters
+                                email wrong format:                         #TODO: add the real message here
+                                    value:
+                                        message: Username must 5 characters
+                                no user with the given email:               #TODO: add the real message here
+                                    value:
+                                        message: Us least 5 characters
 
 #TODO: /api/game
-#TODO: /api/quiz
-#TODO: /api/users/user
